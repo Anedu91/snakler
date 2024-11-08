@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "server"
+version = "0.1.0"
+description = ""
+authors = ["Angel Eduardo <40308240+Anedu91@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "server", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+quart = "^0.19.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
