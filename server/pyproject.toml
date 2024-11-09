@@ -1,16 +1,21 @@
 [tool.poetry]
-name = "server"
+name = "chat"
 version = "0.1.0"
 description = ""
 authors = ["Angel Eduardo <40308240+Anedu91@users.noreply.github.com>"]
 readme = "README.md"
-packages = [{include = "server", from = "src"}]
+packages = [{include = "chat", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 quart = "^0.19.8"
 
 
+pytest = "^8.3.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+start = "chat:run"
