@@ -1,8 +1,9 @@
 
+from chat.broker import Broker
 from quart import Quart, render_template, websocket
 import asyncio
 
-from chat.broker import Broker
+
 
 app = Quart(__name__)
 

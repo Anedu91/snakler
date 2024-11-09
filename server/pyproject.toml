@@ -12,6 +12,9 @@ quart = "^0.19.8"
 
 
 pytest = "^8.3.3"
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.24.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -19,3 +22,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 start = "chat:run"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [
+    "src"
+]
