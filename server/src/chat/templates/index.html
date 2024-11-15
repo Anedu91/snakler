@@ -1,36 +1,95 @@
-<script type="text/javascript">
-  const ws = new WebSocket(`ws://${location.host}/ws`);
 
-  ws.addEventListener('message', function (event) {
-    const li = document.createElement("li");
-    li.appendChild(document.createTextNode(event.data));
-    document.getElementById("messages").appendChild(li);
-  });
-
-  function send(event) {
-    const message = (new FormData(event.target)).get("message");
-    if (message) {
-      ws.send(message);
-    }
-    event.target.reset();
-    return false;
-  }
-  function sendClick(event) {
-    ws.send("click");
-  }
-</script>
-
-<div style="display: flex; height: 100%; flex-direction: column">
-  <div style="flex-grow: 1; display: flex; justify-content: space-between;">
-    <ul id="messages" style="flex-grow: 1; list-style-type: none"></ul>
-    <div>
-      <button onclick="return sendClick(event)">click me</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="grid w-[500px] h-[500px] absolute top-[%50%] bg-red-500 left-[50%]" id="space">
+    <div id="circle" class="w-[10px] h-[10px] bg-blue-500 absolute hidden rounded-full"></div>
+  </div>
+  <div style="display: flex; height: 100%; flex-direction: column">
+    <div style="flex-grow: 1; display: flex; justify-content: space-between;">
+      <ul id="messages" style="flex-grow: 1; list-style-type: none"></ul>
     </div>
+
+
+    <form id="message-form">
+      <input type="text" name="message" minlength="1" />
+      <button type="submit">Send</button>
+    </form>
   </div>
 
 
-  <form onsubmit="return send(event)">
-    <input type="text" name="message" minlength="1" />
-    <button type="submit">Send</button>
-  </form>
-</div>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+<script type="text/javascript">
+
+  const clickInformantion = (click) => {
+    return JSON.stringify({
+      type: "click",
+      x: click.offsetX,
+      y: click.offsetY
+    })
+  }
+  const messageInformantion = (message) => {
+    return JSON.stringify({
+      type: "message",
+      message: message
+    })
+  }
+  const clickCordinates = (message) =>{
+    const objectMessage = JSON.parse(message);
+    return {
+      x: objectMessage.x,
+      y: objectMessage.y
+    }
+  }
+  const typeOfMessage = (message) => {
+    return JSON.parse(message).type
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const $circle = document.querySelector("#circle");
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+
+    ws.addEventListener('message', function (event) {
+
+      if(typeOfMessage(event.data) === "click") {
+        console.log(clickCordinates(event.data))
+        $circle.style.left = `${clickCordinates(event.data).x}px`;
+        $circle.style.top = `${clickCordinates(event.data).y}px`;
+        $circle.classList.remove("hidden");
+      }
+      else {
+
+        const li = document.createElement("li");
+      li.appendChild(document.createTextNode(event.data));
+        document.getElementById("messages").appendChild(li);
+      }
+    })
+
+    const $space = document.querySelector("#space");
+
+    $space.addEventListener('click', (event) => {
+      ws.send(clickInformantion(event))
+    })
+
+    const $messageForm = document.querySelector("#message-form");
+    $messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const message = (new FormData(event.target)).get("message");
+      if (message) {
+        ws.send(messageInformantion(message));
+      }
+      event.target.reset();
+      return false;
+    })
+  }
+  )
+</script>
+</body>
+</html>
+

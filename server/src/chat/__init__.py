@@ -6,7 +6,8 @@ import asyncio
 
 
 app = Quart(__name__)
-
+app.jinja_env.auto_reload = True
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 broker = Broker()
 
@@ -25,6 +26,7 @@ async def ws() -> None:
     try:
         task = asyncio.ensure_future(_receive())
         async for message in broker.subscribe():
+            print(message)
             await websocket.send(message)
     finally:
         task.cancel()
