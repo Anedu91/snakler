@@ -7,8 +7,10 @@
   <title>Document</title>
 </head>
 <body>
-  <div class="grid w-[500px] h-[500px] absolute top-[%50%] bg-red-500 left-[50%]" id="space">
+  <div class="grid w-[{{area}}px] h-[{{area}}px] absolute top-[25%] bg-red-500 left-[50%]" id="space">
     <div id="circle" class="w-[10px] h-[10px] bg-blue-500 absolute hidden rounded-full"></div>
+
+    <div id="square" class="w-[10px] h-[10px] bg-green-500 absolute top-[{{snake_position.y}}px] left-[{{snake_position.x}}px] rounded-full"></div>
   </div>
   <div style="display: flex; height: 100%; flex-direction: column">
     <div style="flex-grow: 1; display: flex; justify-content: space-between;">
@@ -27,6 +29,16 @@
 
 <script type="text/javascript">
 
+  const moveInformantion = (x,y,typeOfMovement) => {
+    console.log(x,y,typeOfMovement)
+    return JSON.stringify({
+      type: "move",
+      x: x,
+      y: y,
+      typeOfMovement: typeOfMovement
+    })
+  }
+
   const clickInformantion = (click) => {
     return JSON.stringify({
       type: "click",
@@ -40,6 +52,7 @@
       message: message
     })
   }
+
   const clickCordinates = (message) =>{
     const objectMessage = JSON.parse(message);
     return {
@@ -52,6 +65,7 @@
   }
   document.addEventListener('DOMContentLoaded', () => {
     const $circle = document.querySelector("#circle");
+    const $square = document.querySelector("#square");
     const ws = new WebSocket(`ws://${location.host}/ws`);
 
     ws.addEventListener('message', function (event) {
@@ -61,11 +75,13 @@
         $circle.style.left = `${clickCordinates(event.data).x}px`;
         $circle.style.top = `${clickCordinates(event.data).y}px`;
         $circle.classList.remove("hidden");
+      } else if (typeOfMessage(event.data) === "move") {
+        $square.style.left = `${event.data.x}px`;
+        $square.style.top = `${event.data.y}px`;
       }
       else {
-
         const li = document.createElement("li");
-      li.appendChild(document.createTextNode(event.data));
+        li.appendChild(document.createTextNode(event.data));
         document.getElementById("messages").appendChild(li);
       }
     })
@@ -86,6 +102,26 @@
       }
       event.target.reset();
       return false;
+    })
+
+    document.addEventListener('keydown', (event) => {
+      console.log(event.key)
+      switch (event.key) {
+        case "ArrowUp":
+          ws.send(moveInformantion($square.offsetLeft, $square.offsetTop, "up"))
+          break;
+        case "ArrowDown":
+          ws.send(moveInformantion($square.offsetLeft, $square.offsetTop, "down"))
+          break;
+        case "ArrowLeft":
+          ws.send(moveInformantion($square.offsetLeft, $square.offsetTop, "left"))
+          break;
+        case "ArrowRight":
+          ws.send(moveInformantion($square.offsetLeft, $square.offsetTop, "right"))
+          break;
+        default:
+        return
+      }
     })
   }
   )
