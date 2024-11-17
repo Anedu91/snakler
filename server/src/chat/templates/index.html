@@ -9,8 +9,7 @@
 <body>
   <div class="grid w-[{{area}}px] h-[{{area}}px] absolute top-[25%] bg-red-500 left-[50%]" id="space">
     <div id="circle" class="w-[10px] h-[10px] bg-blue-500 absolute hidden rounded-full"></div>
-
-    <div id="square" class="w-[10px] h-[10px] bg-green-500 absolute top-[{{snake_position.y}}px] left-[{{snake_position.x}}px] rounded-full"></div>
+    <div id="square" class="w-[10px] h-[10px] bg-green-500 absolute top-0 left-0"></div>
   </div>
   <div style="display: flex; height: 100%; flex-direction: column">
     <div style="flex-grow: 1; display: flex; justify-content: space-between;">
@@ -29,8 +28,7 @@
 
 <script type="text/javascript">
 
-  const moveInformantion = (x,y,typeOfMovement) => {
-    console.log(x,y,typeOfMovement)
+  const moveInformation = (x,y,typeOfMovement) => {
     return JSON.stringify({
       type: "move",
       x: x,
@@ -79,6 +77,10 @@
         $square.style.left = `${event.data.x}px`;
         $square.style.top = `${event.data.y}px`;
       }
+      else if (typeOfMessage(event.data) === "move") {
+        $square.style.left = `${clickCordinates(event.data).x}px`;
+        $square.style.top = `${clickCordinates(event.data).y}px`;
+      }
       else {
         const li = document.createElement("li");
         li.appendChild(document.createTextNode(event.data));
@@ -90,6 +92,24 @@
 
     $space.addEventListener('click', (event) => {
       ws.send(clickInformantion(event))
+    })
+
+
+    document.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case "ArrowUp":
+          ws.send(moveInformation($square.offsetLeft, $square.offsetTop, "up"))
+          break;
+        case "ArrowDown":
+          ws.send(moveInformation($square.offsetLeft, $square.offsetTop, "down"))
+          break;
+        case "ArrowLeft":
+          ws.send(moveInformation($square.offsetLeft, $square.offsetTop, "left"))
+          break;
+        case "ArrowRight":
+          ws.send(moveInformation($square.offsetLeft, $square.offsetTop, "right"))
+          break;
+      }
     })
 
     const $messageForm = document.querySelector("#message-form");
