@@ -66,22 +66,22 @@
     ws.addEventListener('message', function (event) {
       const data = JSON.parse(event.data)
 
-      const {type, payload} = data
+      const {type, coordinates, message} = data
 
 
       switch(type) {
         case "click":
-          $circle.style.left = `${payload.x}px`;
-          $circle.style.top = `${payload.y}px`;
+          $circle.style.left = `${coordinates.x}px`;
+          $circle.style.top = `${coordinates.y}px`;
           $circle.classList.remove("hidden");
           break;
         case "move":
-          $square.style.left = `${payload.x}px`;
-          $square.style.top = `${payload.y}px`;
+          $square.style.left = `${coordinates.x}px`;
+          $square.style.top = `${coordinates.y}px`;
           break;
         case "message":
           const li = document.createElement("li");
-          li.appendChild(document.createTextNode(payload.message));
+          li.appendChild(document.createTextNode(message));
           document.getElementById("messages").appendChild(li);
         }
 

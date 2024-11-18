@@ -17,8 +17,7 @@ async def _receive() -> None:
     while True:
         message = await websocket.receive()
         message_to_broker = message_to_client(message_from_client(message))
-        print(message_to_broker)
-        await broker.publish(message)
+        await broker.publish(message_to_broker)
 
 
 
