@@ -1,6 +1,6 @@
 
 from chat.broker import Broker
-from chat.functions.move import move
+from chat.helpers import message_from_client, message_to_client
 from quart import Quart, render_template, websocket
 import json
 import asyncio
@@ -16,17 +16,9 @@ broker = Broker()
 async def _receive() -> None:
     while True:
         message = await websocket.receive()
-        try:
-            data = json.loads(message)
-            print(data)
-            if data['type'] == 'move':
-                move_result = move(data, AREA)
-                message = json.dumps(move_result)
-                await broker.publish(message)
-            else:
-                await broker.publish(message)
-        except json.JSONDecodeError:
-            print("Non-JSON message:", message)
+        message_to_broker = message_to_client(message_from_client(message))
+        print(message_to_broker)
+        await broker.publish(message)
 
 
 
@@ -43,9 +35,6 @@ async def ws() -> None:
     try:
         task = asyncio.ensure_future(_receive())
         async for message in broker.subscribe():
-
-
-
             await websocket.send(message)
     finally:
         task.cancel()
