@@ -2,7 +2,6 @@
 from chat.broker import Broker
 from chat.helpers import message_from_client, message_to_client
 from quart import Quart, render_template, websocket
-import json
 import asyncio
 
 
@@ -12,6 +11,8 @@ app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 broker = Broker()
+connected_clients = 0
+MAX_CLIENTS = 2
 
 async def _receive() -> None:
     while True:
@@ -31,11 +32,18 @@ async def index():
 
 @app.websocket("/ws")
 async def ws() -> None:
+    global connected_clients
+
+    if connected_clients >= MAX_CLIENTS:
+        await websocket.close(1008, "Max clients reached")
+        return
     try:
+        connected_clients += 1
         task = asyncio.ensure_future(_receive())
         async for message in broker.subscribe():
             await websocket.send(message)
     finally:
+        connected_clients -= 1
         task.cancel()
         await task
 
