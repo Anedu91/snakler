@@ -3,7 +3,7 @@ from typing import Literal
 
 
 @dataclass
-class Coordinates:
+class Position:
     x: int
     y: int
 
@@ -17,16 +17,16 @@ class MessageFromClient:
 @dataclass(frozen=True)
 class MessageToClient:
     type: MessageType
-    coordinates: Coordinates | None = None
+    position: Position | None = None
     message: str | None = None
 
 
 
-MovementType = Literal["up", "down", "left", "right"]
+DirectionType = Literal["up", "down", "left", "right"]
 
 
 @dataclass
 class MoveData:
-    movement: MovementType
+    direction: DirectionType
     x: int
     y: int
