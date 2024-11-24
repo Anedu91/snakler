@@ -6,10 +6,26 @@ from chat.typedef import MessageFromClient, MessageToClient
 
 def message_from_client(message: str) -> MessageFromClient:
     try:
-      data = json.loads(message)
-      return MessageFromClient(type=data["type"], payload=data["payload"])
+        if not message:
+            raise ValueError("Empty message")
+
+        data = json.loads(message)
+
+        if "type" not in data:
+            raise ValueError("Message missing 'type' field")
+
+        if data["type"] not in ["message", "move", "click"]:
+            raise ValueError(f"Invalid message type: {data['type']}")
+
+        if "payload" not in data:
+            raise ValueError("Message missing 'payload' field")
+
+        return MessageFromClient(type=data["type"], payload=data["payload"])
+
     except json.JSONDecodeError:
-      raise ValueError("Non-JSON message")
+        raise ValueError("Invalid JSON format")
+    except Exception as e:
+        raise ValueError(f"Invalid message format: {str(e)}")
 
 
 def message_to_client(message: MessageFromClient) -> str:
