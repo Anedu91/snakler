@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "snakler"
+version = "0.1.0"
+description = ""
+authors = ["Angel Eduardo <40308240+Anedu91@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "3.12.2"
+quart = "0.19.8"
+
+
+pytest = "8.3.3"
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "0.24.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+dev = "app.app:run_debug"
+start = "app.app:run"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [
+    "src"
+]
