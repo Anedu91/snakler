@@ -1,6 +1,11 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Literal
 
+class ClientRole(Enum):
+    CLICKER = "clicker"    # Can send click messages
+    MOVER = "mover"      # Can send move messages
+    VIEWER = "viewer"    # Can only send regular messages
 
 @dataclass
 class Position:

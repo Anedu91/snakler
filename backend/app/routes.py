@@ -1,16 +1,16 @@
-from quart import Quart, render_template, websocket
+from quart import Quart, jsonify, websocket
 
 
 def register_routes(app: Quart) -> None:
     """Register all application routes."""
 
-    @app.get("/")
-    async def index():
-        print("index")
-        """Render the main game page."""
-        return await render_template(
-            "index.html",
-        )
+    @app.get("/connect")
+    async def connect():
+        """Initial connection endpoint."""
+        return jsonify({
+            "status": "ready",
+            "websocket_url": "ws://127.0.0.1:5000/ws"
+        })
 
     @app.websocket("/ws")
     async def ws():

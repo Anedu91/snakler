@@ -1,71 +1,66 @@
 import asyncio
 import pytest
-from app.broker import Broker
+from app.core.broker import Broker, BrokerMessage
+
 
 @pytest.mark.asyncio
-async def test_broker_publish_and_subscribe():
-    # Setup
+async def test_basic_publish_subscribe():
     broker = Broker()
-    received_messages = []
+    received = []
 
-    # Subscribe to messages
-    async def collect_messages():
-        async for message in broker.subscribe():
-            received_messages.append(message)
-            if len(received_messages) == 2:  # Break after receiving 2 messages
-                break
+    async with broker.subscribe() as messages:
+        await broker.publish("test message")
+        async for message in messages:
+            received.append(message)
+            break
 
-    # Start collecting messages in the background
-    collect_task = asyncio.create_task(collect_messages())
+    assert received == ["test message"]
 
-    # Give the subscriber time to set up
-    await asyncio.sleep(0.1)
-
-    # Publish messages
-    test_messages = ["Hello", "World"]
-    for message in test_messages:
-        await broker.publish(message)
-
-    # Wait for messages to be received
-    await collect_task
-
-    # Verify the messages were received in order
-    assert received_messages == test_messages
 
 @pytest.mark.asyncio
-async def test_broker_multiple_subscribers():
+async def test_broker_close():
     broker = Broker()
-    subscriber1_messages = []
-    subscriber2_messages = []
+    received = []
+
+    async with broker.subscribe() as messages:
+        await broker.publish("message 1")
+        await broker.close()
+
+        async for message in messages:
+            received.append(message)
+
+    assert received == ["message 1"]
+    assert not broker.active
+    assert len(broker.connections) == 0
+
+
+@pytest.mark.asyncio
+async def test_multiple_subscribers_with_error():
+    broker = Broker()
+    received1, received2 = [], []
 
     async def subscriber1():
-        async for message in broker.subscribe():
-            subscriber1_messages.append(message)
-            if len(subscriber1_messages) == 2:
-                break
+        async with broker.subscribe() as messages:
+            async for message in messages:
+                received1.append(message)
 
     async def subscriber2():
-        async for message in broker.subscribe():
-            subscriber2_messages.append(message)
-            if len(subscriber2_messages) == 2:
-                break
+        async with broker.subscribe() as messages:
+            async for message in messages:
+                received2.append(message)
 
-    # Start both subscribers
+    # Iniciar ambos subscribers
     task1 = asyncio.create_task(subscriber1())
     task2 = asyncio.create_task(subscriber2())
 
-    # Give subscribers time to set up
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.1)  # Dar tiempo para que se conecten
 
-    # Publish messages
-    test_messages = ["Hello", "World"]
-    for message in test_messages:
-        await broker.publish(message)
+    # Publicar y cerrar
+    await broker.publish("test message")
+    await broker.close()
 
-    # Wait for both subscribers to receive messages
+    # Esperar que terminen
     await task1
     await task2
 
-    # Verify both subscribers received all messages
-    assert subscriber1_messages == test_messages
-    assert subscriber2_messages == test_messages
+    assert received1 == received2 == ["test message"]

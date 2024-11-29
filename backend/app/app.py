@@ -9,7 +9,6 @@ def create_app() -> Quart:
     app = Quart(__name__)
 
     app.config.update(
-      TEMPLATES_AUTO_RELOAD=True,
       MAX_CLIENTS=2,
       DEBUG=False
     )
