@@ -4,7 +4,7 @@ __pycache__/
 
 node_modules/
 
-front/dist/
-front/.parcel-cache/
-front/build/
-front/elm-stuff/
+frontend/dist/
+frontend/.parcel-cache/
+frontend/build/
+frontend/elm-stuff/
