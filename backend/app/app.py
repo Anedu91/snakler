@@ -9,7 +9,7 @@ def create_app() -> Quart:
     app = Quart(__name__)
 
     app.config.update(
-      MAX_CLIENTS=2,
+      MAX_CLIENTS=10,
       DEBUG=False
     )
 

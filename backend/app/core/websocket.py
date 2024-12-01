@@ -2,7 +2,6 @@ from app.helpers import message_from_client, message_to_client
 from app.typedef import ClientRole
 from quart import Websocket
 import asyncio
-import json
 from app.core.broker import Broker
 
 class WebSocketHandler:
@@ -12,9 +11,9 @@ class WebSocketHandler:
         self.client_roles = {}
         self.role_assigned = {
             ClientRole.CLICKER: False,
-            ClientRole.MOVER: False
+            ClientRole.MOVER: False,
         }
-    def _assign_role(self, ws: Websocket) -> ClientRole:
+    def _assign_role(self) -> ClientRole:
         """Assigns a role to the client."""
         if not self.role_assigned[ClientRole.MOVER]:
             self.role_assigned[ClientRole.MOVER] = True
@@ -29,30 +28,49 @@ class WebSocketHandler:
     async def handle_connection(self, ws: Websocket) -> None:
         """Handles a new WebSocket connection."""
         self.client_count += 1
-        role = self._assign_role(ws)
+        role = self._assign_role()
         self.client_roles[ws] = role
+        print(f"Client {ws} connected with role {role}")
 
+        print(self.client_roles)
         try:
-            # create task to receive messages from the client
             receive_task = asyncio.create_task(self._receive_messages(ws))
-            # subscribe to messages from the broker - it also returns the messages to the client
-            async with self.broker.subscribe() as messages:
-                async for message in messages:
-                    await ws.send(message)
+            broker_task = asyncio.create_task(self._handle_broker_messages(ws))
+
+            # Wait for either task to finish
+            _, pending = await asyncio.wait(
+                [receive_task, broker_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # Cancel the pending tasks
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
         finally:
-            # cancel the receive task
-            receive_task.cancel()
-            try:
-                await receive_task
-            except asyncio.CancelledError:
-                pass
+
             if self.client_roles[ws] in [ClientRole.MOVER, ClientRole.CLICKER]:
                 self.role_assigned[self.client_roles[ws]] = False
             del self.client_roles[ws]
             self.client_count -= 1
 
+    async def _handle_broker_messages(self, ws: Websocket) -> None:
+        """Handle messages from the broker to the client for this connection."""
+        try:
+            async with self.broker.subscribe() as messages:
+                async for message in messages:
+                    await ws.send(message)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            print(f"Error handling broker messages: {e}")
+
     async def _receive_messages(self, ws: Websocket) -> None:
+        """Receive messages from the client."""
         try:
             while True:
                 # receive: wait for new messages
@@ -65,7 +83,7 @@ class WebSocketHandler:
             print(f"Error receiving message: {e}")
 
     async def handle_message(self, ws: Websocket, message: str) -> None:
-        """Procesa y publica un mensaje al broker."""
+        """Processes and publishes a message to the broker."""
         try:
             # handle the message and validate it before sending it to the broker
             validated_message = message_from_client(message)

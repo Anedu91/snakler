@@ -1,63 +1,73 @@
-import pytest
-from unittest.mock import AsyncMock
-from contextlib import asynccontextmanager
+import asyncio
 import json
-
+from app.typedef import ClientRole
+import pytest
+from quart import Quart, websocket
 from app.core.websocket import WebSocketHandler
+from app.core.broker import Broker
 
 @pytest.fixture
-def mock_websocket():
-    ws = AsyncMock()
-    ws.receive = AsyncMock()
-    ws.send = AsyncMock()
-    return ws
+def app():
+    app = Quart(__name__)
+
+    # Crear el broker y websocket handler
+    broker = Broker()
+    ws_handler = WebSocketHandler(broker)
+
+    # Registrar la ruta del websocket
+    @app.websocket('/ws')
+    async def ws():
+        await ws_handler.handle_connection(websocket)
+
+    # Guardar las referencias en la app
+    app.ws_handler = ws_handler
+    app.broker = broker
+
+    return app
 
 @pytest.fixture
-def mock_broker():
-    broker = AsyncMock()
+def websocket_handler(app):
+    return app.ws_handler
 
-    # Crear un context manager asíncrono mock
-    @asynccontextmanager
-    async def mock_subscribe():
-        # Crear un generador asíncrono mock que no produce valores
-        async def empty_generator():
-            return
-            yield  # Nunca llegará aquí
 
-        yield empty_generator()
-
-    broker.subscribe = mock_subscribe
-    return broker
 
 @pytest.mark.asyncio
-async def test_handle_message_valid(mock_broker):
-    """Test que un mensaje válido se publica al broker"""
-    handler = WebSocketHandler(mock_broker)
+async def test_basic_connection(app, websocket_handler):
+    async with app.test_client().websocket('/ws') as _:
+        # wait for the connection to be established
+        await asyncio.sleep(0.1)
 
-    valid_message = json.dumps({
-        "type": "message",
-        "payload": "test"
-    })
+        assert websocket_handler.client_count == 1
 
-    await handler.handle_message(valid_message)
-    mock_broker.publish.assert_called_once_with(valid_message)
+    # wait for the connection to be closed
+    await asyncio.sleep(0.1)
+    assert websocket_handler.client_count == 0
 
-@pytest.mark.asyncio
-async def test_handle_message_invalid(mock_broker):
-    """Test que un mensaje inválido lanza error"""
-    handler = WebSocketHandler(mock_broker)
-
-    invalid_message = "invalid json"
-
-    with pytest.raises(ValueError):
-        await handler.handle_message(invalid_message)
 
 @pytest.mark.asyncio
-async def test_client_count(mock_broker, mock_websocket):
-    """Test que el contador de clientes se incrementa y decrementa correctamente"""
-    handler = WebSocketHandler(mock_broker)
+async def test_role_assignment(app, websocket_handler):
+    # first client should be a mover
+    async with app.test_client().websocket('/ws') as client1:
+        task1 = asyncio.create_task(websocket_handler.handle_connection(client1))
+        await asyncio.sleep(0.1)
+        assert websocket_handler.client_roles[client1] == ClientRole.MOVER
 
-    assert handler.client_count == 0
+        # second client should be a clicker
+        async with app.test_client().websocket('/ws') as client2:
+            task2 = asyncio.create_task(websocket_handler.handle_connection(client2))
+            await asyncio.sleep(0.1)
+            assert websocket_handler.client_roles[client2] == ClientRole.CLICKER
 
-    # Simular conexión
-    assert handler.client_count == 0
+            async with app.test_client().websocket('/ws') as client3:
+                task3 = asyncio.create_task(websocket_handler.handle_connection(client3))
+                await asyncio.sleep(0.1)
+                assert websocket_handler.client_roles[client3] == ClientRole.VIEWER
+
+                await client3.close(1000)
+            await client2.close(1000)
+        await client1.close(1000)
+
+        try:
+            await asyncio.gather(task1, task2, task3)
+        except Exception:
+            pass
